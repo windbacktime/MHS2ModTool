@@ -294,7 +294,6 @@ namespace MHS2ModTool.GameFileFormats
         private static unsafe uint GetWeightsPerVertex(ReadOnlySpan<Vertex> input)
         {
             uint weightsCount = 0;
-            Vertex lastBoneAt4 = default;
 
             for (int i = 0; i < input.Length; i++)
             {
@@ -304,10 +303,6 @@ namespace MHS2ModTool.GameFileFormats
                 {
                     if (vertex.Weights0[j] > 0f)
                     {
-                        if (j == 3)
-                        {
-                            lastBoneAt4 = vertex;
-                        }
                         weightsCount = Math.Max(weightsCount, j + 1);
                     }
 
@@ -316,11 +311,6 @@ namespace MHS2ModTool.GameFileFormats
                         weightsCount = Math.Max(weightsCount, j + 5);
                     }
                 }
-            }
-
-            if (weightsCount == 4)
-            {
-                Console.WriteLine($"test {lastBoneAt4.Joints0[0]} {lastBoneAt4.Joints0[1]} {lastBoneAt4.Joints0[2]} {lastBoneAt4.Joints0[3]} {lastBoneAt4.Weights0[0]} {lastBoneAt4.Weights0[1]} {lastBoneAt4.Weights0[2]} {lastBoneAt4.Weights0[3]}");
             }
 
             return weightsCount;
@@ -517,19 +507,6 @@ namespace MHS2ModTool.GameFileFormats
                     Write(writer, type, value);
                     break;
             }
-        }
-
-        public void CompareForDebug(MTVertexBuffer other, int stride)
-        {
-            for (int i = 0; i < _data.Length; i++)
-            {
-                if (_data[i] != other._data[i])
-                {
-                    throw new Exception($"trouble at {i} (vtx {i / stride} rel offs {i % stride}) {_data[i]:X} {_data[i + 1]:X} {_data[i + 2]:X} {_data[i + 3]:X} != {other._data[i]:X} {other._data[i + 1]:X} {other._data[i + 2]:X} {other._data[i + 3]:X}");
-                }
-            }
-
-            Console.WriteLine($"done with sz {_data.Length}");
         }
     }
 }

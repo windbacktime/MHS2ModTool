@@ -74,7 +74,7 @@ namespace MHS2ModTool.CommonFileFormats
             0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
         ];
 
-        public static void Save(Stream output, ImageParameters parameters, ReadOnlySpan<byte> data, bool fastMode = false)
+        public static void Save(Stream output, ImageParameters parameters, ReadOnlySpan<byte> data)
         {
             output.Write(s_PngSignature);
 
@@ -86,7 +86,7 @@ namespace MHS2ModTool.CommonFileFormats
                 ColorType = 6,
             });
 
-            byte[] encoded = EncodeImageData(data, parameters.Width, parameters.Height, fastMode);
+            byte[] encoded = EncodeImageData(data, parameters.Width, parameters.Height);
 
             for (int encodedOffset = 0; encodedOffset < encoded.Length; encodedOffset += MaxIdatChunkSize)
             {
@@ -98,7 +98,7 @@ namespace MHS2ModTool.CommonFileFormats
             WriteChunk(output, IendMagic, ReadOnlySpan<byte>.Empty);
         }
 
-        private static byte[] EncodeImageData(ReadOnlySpan<byte> input, int width, int height, bool fastMode)
+        private static byte[] EncodeImageData(ReadOnlySpan<byte> input, int width, int height)
         {
             int bpp = 4;
             int stride = width * bpp;
@@ -106,12 +106,12 @@ namespace MHS2ModTool.CommonFileFormats
 
             using MemoryStream ms = new();
 
-            using (ZLibStream zLibStream = new(ms, fastMode ? CompressionLevel.Fastest : CompressionLevel.SmallestSize))
+            using (ZLibStream zLibStream = new(ms, CompressionLevel.Optimal))
             {
                 for (int y = 0; y < height; y++)
                 {
                     ReadOnlySpan<byte> scanline = input.Slice(y * stride, stride);
-                    FilterType filterType = fastMode ? FilterType.None : SelectFilterType(input, scanline, y, width, bpp);
+                    FilterType filterType = SelectFilterType(input, scanline, y, width, bpp);
 
                     zLibStream.WriteByte((byte)filterType);
 
