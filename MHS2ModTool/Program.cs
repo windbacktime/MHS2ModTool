@@ -209,7 +209,7 @@ namespace MHS2ModTool
                         command.Operation = Operation.ConvertDdsToTex;
                         break;
                     default:
-                        if (!File.Exists(arg) && !Directory.Exists(arg))
+                        if (arg.StartsWith('-') || arg.StartsWith('/'))
                         {
                             Console.WriteLine($"ERROR: Invalid argument: '{arg}'.");
                             return false;
