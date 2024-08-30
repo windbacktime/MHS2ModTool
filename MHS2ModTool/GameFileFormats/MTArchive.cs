@@ -123,11 +123,19 @@ namespace MHS2ModTool.GameFileFormats
 
                 byte[] compressedData = ZlibCompress(file.Data);
 
+                uint compressedLength = (uint)compressedData.Length;
+
+                if (crypto != null)
+                {
+                    // Compressed length must be 8 bytes aligned when using blowfish crypto.
+                    compressedLength = (compressedLength + 7) & ~7u;
+                }
+
                 writer.Write(new MTArchiveEntry()
                 {
                     Path = new(file.Path),
                     ExtensionHash = file.ExtensionHash,
-                    CompressedLength = (uint)compressedData.Length,
+                    CompressedLength = compressedLength,
                     DecompressedLength = (uint)file.Data.Length | IsCompressedFlag,
                     Offset = (uint)dataOffset
                 }, crypto);
