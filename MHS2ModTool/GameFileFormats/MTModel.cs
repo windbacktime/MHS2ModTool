@@ -1047,26 +1047,17 @@ namespace MHS2ModTool.GameFileFormats
             foreach ((_, uint meshId, uint groupId, var meshTpye, var primitive) in primitives)
             {
                 var reader = new GltfVertexReader();
-                byte weightsPerVertex = 0;
 
                 foreach (var attributeKey in primitive.VertexAccessors.Keys)
                 {
                     var accessor = primitive.GetVertices(attributeKey);
                     reader.Read(attributeKey, accessor);
-
-                    if (attributeKey == "JOINTS_0")
-                    {
-                        weightsPerVertex = accessor.Attribute.Dimensions switch
-                        {
-                            DimensionType.SCALAR => 1,
-                            DimensionType.VEC2 => 2,
-                            DimensionType.VEC3 => 3,
-                            _ => 4
-                        };
-                    }
                 }
 
                 (var vertices, var formatFlags) = reader.GetVertices();
+
+                // Game does not seem to support more than 4 weights?
+                byte weightsPerVertex = (byte)Math.Min(MTVertexBuffer.GetWeightsPerVertex(vertices), 4);
 
                 var indices = new List<ushort>();
 

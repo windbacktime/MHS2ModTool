@@ -291,7 +291,7 @@ namespace MHS2ModTool.GameFileFormats
             }
         }
 
-        private static unsafe uint GetWeightsPerVertex(ReadOnlySpan<Vertex> input)
+        public static unsafe uint GetWeightsPerVertex(ReadOnlySpan<Vertex> input)
         {
             uint weightsCount = 0;
 
