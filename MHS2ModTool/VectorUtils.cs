@@ -23,5 +23,14 @@ namespace MHS2ModTool
         {
             return x == 0f ? 0f : 1f / x;
         }
+
+        public static Vector3 ToYawPitchRoll(this Quaternion q)
+        {
+            float yaw = MathF.Atan2(2.0f * (q.Y * q.W + q.X * q.Z), 1.0f - 2.0f * (q.X * q.X + q.Y * q.Y));
+            float pitch = MathF.Asin(2.0f * (q.X * q.W - q.Y * q.Z));
+            float roll = MathF.Atan2(2.0f * (q.X * q.Y + q.Z * q.W), 1.0f - 2.0f * (q.X * q.X + q.Z * q.Z));
+
+            return new Vector3(roll, pitch, yaw);
+        }
     }
 }

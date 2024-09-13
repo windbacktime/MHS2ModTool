@@ -1044,7 +1044,7 @@ namespace MHS2ModTool.GameFileFormats
             // Ensure meshes are in the correct order.
             primitives.Sort((x, y) => x.Key.CompareTo(y.Key));
 
-            foreach ((_, uint meshId, uint groupId, var meshTpye, var primitive) in primitives)
+            foreach ((_, uint meshId, uint groupId, var meshType, var primitive) in primitives)
             {
                 var reader = new GltfVertexReader();
 
@@ -1080,7 +1080,7 @@ namespace MHS2ModTool.GameFileFormats
                     formatFlags,
                     primitiveType,
                     [.. indices],
-                    meshTpye,
+                    meshType,
                     meshId,
                     groupId,
                     materialIndex,

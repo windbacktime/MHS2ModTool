@@ -154,7 +154,7 @@ namespace MHS2ModTool.GameFileFormats
         {
             foreach (var file in _entries)
             {
-                string ext = Path.GetExtension(file.Path).ToLowerInvariant();
+                string ext = PathUtils.GetFullExtension(file.Path).ToLowerInvariant();
 
                 if (MTArchiveFormatTable.TryGetHashFromExtension(ext, out uint extHash))
                 {

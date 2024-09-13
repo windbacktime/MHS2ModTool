@@ -11,5 +11,25 @@
 
             return path;
         }
+
+        public static string GetFullExtension(string path)
+        {
+            string ext = string.Empty;
+
+            while (true)
+            {
+                string currentExt = Path.GetExtension(path);
+
+                if (string.IsNullOrEmpty(currentExt))
+                {
+                    break;
+                }
+
+                path = path[..^currentExt.Length];
+                ext = currentExt + ext;
+            }
+
+            return ext;
+        }
     }
 }

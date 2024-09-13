@@ -12,7 +12,9 @@ namespace MHS2ModTool
             ConvertModToGlb,
             ConvertGlbToMod,
             ConvertTexToDds,
-            ConvertDdsToTex
+            ConvertDdsToTex,
+            ConvertCtcToJson,
+            ConvertJsonToCtc
         }
 
         private struct Command
@@ -155,6 +157,26 @@ namespace MHS2ModTool
                     Console.WriteLine($"Converting '{paths[1]}' to '{paths[0]}'...");
                     MTTexture.ImportDds(paths[1], paths[0]).Save(paths[0], command.TargetPlatform);
                     break;
+                case Operation.ConvertCtcToJson:
+                    if (paths.Count != 2 || Directory.Exists(paths[0]) || !File.Exists(paths[1]))
+                    {
+                        Console.WriteLine("ERROR: Expected one output '.json' file and one input '.ctc' file, in that order.");
+                        return;
+                    }
+
+                    Console.WriteLine($"Converting '{paths[1]}' to '{paths[0]}'...");
+                    MTCnsTinyChain.Load(paths[1]).ExportJson(paths[0]);
+                    break;
+                case Operation.ConvertJsonToCtc:
+                    if (paths.Count != 2 || Directory.Exists(paths[0]) || !File.Exists(paths[1]))
+                    {
+                        Console.WriteLine("ERROR: Expected one output '.ctc' file and one input '.json' file, in that order.");
+                        return;
+                    }
+
+                    Console.WriteLine($"Converting '{paths[1]}' to '{paths[0]}'...");
+                    MTCnsTinyChain.ImportJson(paths[1]).Save(paths[0]);
+                    break;
             }
 
             Console.WriteLine("Done!");
@@ -173,6 +195,8 @@ namespace MHS2ModTool
             Console.WriteLine("--cmod  Create MOD model from GLB model.");
             Console.WriteLine("--xtex  Convert TEX texture to DDS texture.");
             Console.WriteLine("--ctex  Create TEX texture from DDS texture.");
+            Console.WriteLine("--xctc  Convert CTC physics chain to JSON.");
+            Console.WriteLine("--cctc  Create CTC physics chain from JSON.");
 
             Console.WriteLine();
             Console.WriteLine("Note: If no command is specified, the tool will automatically extract or create archives from the paths.");
@@ -207,6 +231,12 @@ namespace MHS2ModTool
                         break;
                     case "--ctex":
                         command.Operation = Operation.ConvertDdsToTex;
+                        break;
+                    case "--xctc":
+                        command.Operation = Operation.ConvertCtcToJson;
+                        break;
+                    case "--cctc":
+                        command.Operation = Operation.ConvertJsonToCtc;
                         break;
                     default:
                         if (arg.StartsWith('-') || arg.StartsWith('/'))
@@ -250,6 +280,13 @@ namespace MHS2ModTool
                             mod.ExportGltf(glbPath, mrl, baseFolder);
                         }
                         break;
+                    case ".ctc":
+                        string ctcJsonPath = fullPath + ".json";
+
+                        Console.WriteLine($"Converting '{fullPath}' to '{ctcJsonPath}'...");
+
+                        MTCnsTinyChain.Load(fullPath).ExportJson(ctcJsonPath);
+                        break;
                 }
             }
         }
@@ -263,7 +300,7 @@ namespace MHS2ModTool
 
             foreach (var path in Directory.GetFiles(baseFolder, "*.*", SearchOption.AllDirectories))
             {
-                switch (Path.GetExtension(path.ToLowerInvariant()))
+                switch (PathUtils.GetFullExtension(path.ToLowerInvariant()))
                 {
                     case ".dds":
                         var texPath = PathUtils.ReplaceExtension(path, ".dds", ".tex");
@@ -280,6 +317,14 @@ namespace MHS2ModTool
 
                         var mod = MTModel.ImportGltf(path, modPath);
                         mod.Save(modPath);
+                        break;
+                    case ".ctc.json":
+                        var ctcPath = PathUtils.ReplaceExtension(path, ".json", string.Empty);
+
+                        Console.WriteLine($"Converting '{path}' to '{ctcPath}'...");
+
+                        var ctc = MTCnsTinyChain.ImportJson(path);
+                        ctc.Save(ctcPath);
                         break;
                 }
             }
