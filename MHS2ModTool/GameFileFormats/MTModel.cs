@@ -1214,7 +1214,7 @@ namespace MHS2ModTool.GameFileFormats
                 Vertex[] vertices = m.Vertices;
                 VertexFormatFlags formatFlags = m.VertexFormatFlags;
 
-                vertexDataOffsets[meshIndex] = WriteVertexData(bufferDataWriter, vertices, m.Transform(_skeleton), formatFlags);
+                vertexDataOffsets[meshIndex] = WriteVertexData(bufferDataWriter, vertices, formatFlags);
 
                 long indexStartOffset = bufferData.Position;
                 bufferDataWriter.Write(MemoryMarshal.Cast<ushort, byte>(m.Indices));
@@ -1345,11 +1345,18 @@ namespace MHS2ModTool.GameFileFormats
                 var skeletonRootNode = scene.CreateNode();
                 skin.Skeleton = skeletonRootNode;
 
-                var skeletonNodes = new Node[_skeleton.Count];
+                var skeletonNodes = new (Node, Matrix4x4)[_skeleton.Count];
 
                 AddSkeletonChildNodes(skin, skeletonRootNode, skeletonNodes, byte.MaxValue);
 
-                skin.BindJoints(skeletonNodes);
+                try
+                {
+                    skin.BindJoints(skeletonNodes);
+                }
+                catch (ArgumentException)
+                {
+                    skin.BindJoints(skeletonNodes.Select(t => t.Item1).ToArray());
+                }
             }
 
             var settings = new WriteSettings
@@ -1362,19 +1369,19 @@ namespace MHS2ModTool.GameFileFormats
             root.SaveGLB(outputBinaryFileName, settings);
         }
 
-        private void AddSkeletonChildNodes(Skin skin, Node parent, Node[] skeletonNodes, byte parentIndex)
+        private void AddSkeletonChildNodes(Skin skin, Node parent, (Node, Matrix4x4)[] skeletonNodes, byte parentIndex)
         {
             int boneIndex = 0;
 
             foreach (var bone in _skeleton)
             {
-                if (bone.ParentIndex == parentIndex && skeletonNodes[boneIndex] == null)
+                if (bone.ParentIndex == parentIndex && skeletonNodes[boneIndex].Item1 == null)
                 {
                     var child = parent.CreateNode($"{BoneIdPrefix}{bone.Id}");
 
                     child.LocalMatrix = bone.LocalTransform;
 
-                    skeletonNodes[boneIndex] = child;
+                    skeletonNodes[boneIndex] = (child, bone.InvBindPoseTransform);
 
                     AddSkeletonChildNodes(skin, child, skeletonNodes, (byte)boneIndex);
                 }
@@ -1383,7 +1390,7 @@ namespace MHS2ModTool.GameFileFormats
             }
         }
 
-        private unsafe static VertexDataOffsets WriteVertexData(BinaryWriter writer, Vertex[] vertices, Vector3[] positions, VertexFormatFlags formatFlags)
+        private unsafe static VertexDataOffsets WriteVertexData(BinaryWriter writer, Vertex[] vertices, VertexFormatFlags formatFlags)
         {
             long positionOffset = 0;
             long positionSize = 0;
@@ -1392,9 +1399,9 @@ namespace MHS2ModTool.GameFileFormats
             {
                 positionOffset = writer.BaseStream.Position;
 
-                for (int i = 0; i < positions.Length; i++)
+                for (int i = 0; i < vertices.Length; i++)
                 {
-                    writer.Write(positions[i]);
+                    writer.Write(vertices[i].Position.Xyz());
                 }
 
                 positionSize = writer.BaseStream.Position - positionOffset;
