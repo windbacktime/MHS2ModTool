@@ -913,6 +913,13 @@ namespace MHS2ModTool.GameFileFormats
                 _calculateEnvelopesUponSave = true
             };
 
+            var settings = new ReadSettings()
+            {
+                Validation = ValidationMode.Skip
+            };
+
+            var root = ModelRoot.Load(inputFileName, settings);
+
             if (originalModFileName != null && File.Exists(originalModFileName))
             {
                 // If possible, import the information we can't store on the GLTF from the original model.
@@ -920,6 +927,22 @@ namespace MHS2ModTool.GameFileFormats
                 MTModel originalModel = Load(originalModFileName);
 
                 output._groups.AddRange(originalModel._groups);
+
+                // Try to import material names from the original model too if possible.
+                // We only import if all the names match the ones in the new model.
+                // The order of the names is important because the indices must match the MRL file.
+
+                var ogMaterialNames = new HashSet<string>();
+                
+                foreach (var materialName in originalModel._materialNames)
+                {
+                    ogMaterialNames.Add(materialName);
+                }
+
+                if (root.LogicalMaterials.All(m => ogMaterialNames.Contains(m.Name)))
+                {
+                    output._materialNames.AddRange(originalModel._materialNames);
+                }
             }
             else
             {
@@ -932,13 +955,6 @@ namespace MHS2ModTool.GameFileFormats
                     BoundingSphere = new MTBoundingSphere(Vector3.Zero, 0f)
                 });
             }
-
-            var settings = new ReadSettings()
-            {
-                Validation = ValidationMode.Skip
-            };
-
-            var root = ModelRoot.Load(inputFileName, settings);
 
             output._boneRemap.Reset();
 
@@ -1003,10 +1019,28 @@ namespace MHS2ModTool.GameFileFormats
 
             var materialIndices = new Dictionary<Material, uint>();
 
-            foreach (var material in root.LogicalMaterials.OrderBy(m => m.Name))
+            if (output._materialNames.Count > 0)
             {
-                output._materialNames.Add(material.Name);
-                materialIndices.Add(material, (uint)materialIndices.Count);
+                // We have the material names from the original model, find the right indices.
+
+                foreach (var material in root.LogicalMaterials)
+                {
+                    int materialIndex = output._materialNames.IndexOf(material.Name);
+                    if (materialIndex >= 0)
+                    {
+                        materialIndices.Add(material, (uint)materialIndex);
+                    }
+                }
+            }
+            else
+            {
+                // We don't have material names yet, import them.
+
+                foreach (var material in root.LogicalMaterials.OrderBy(m => m.Name))
+                {
+                    output._materialNames.Add(material.Name);
+                    materialIndices.Add(material, (uint)materialIndices.Count);
+                }
             }
 
             var meshIdAllocator = new IdAllocator(root.LogicalMeshes, MeshIdPrefix);
